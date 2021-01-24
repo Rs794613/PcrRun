@@ -1,0 +1,146 @@
+{
+ "1":{  
+	  "name":"霞",
+      "icon":"🔍",
+	  "speed":[1,2,2,2,2,1,1,1],
+	  "skill":{
+				"1":{
+					"skill_porb":0.1,
+					"skill_text":"助手跑到哪里去了？霞向前快跑了2步。",
+					"skill_effect":"forward(id,2,position)"
+					},
+				"2":{
+					"skill_porb":0.1,
+					"skill_text":"霞使用了[束缚之径]！，霞前进1步，霞之外全员沉默1回合！",
+					"skill_effect":"forward(id,1,position)\nn_give_silence(select_all(id),1,silence)"
+					},		
+				"3":{
+					"skill_porb":0.08,
+					"skill_text":"霞使用了UB[罪恶囚笼] ，霞前进2步，霞之外全员暂停1回合！",
+					"skill_effect":"forward(id,2,position)\nn_give_pause(select_all(id),1,pause)"
+					},
+				"4":{
+				    "skill_porb":0.02,
+				    "skill_text":"霞突然变成了魔法少女！霞前进3步，霞之外全员沉默1回合，暂停1回合。",
+				    "skill_effect":"forward(id,3,position)\nn_give_silence(select_all(id),1,silence)\nn_give_pause(select_all(id),1,pause)"
+					}
+			   }
+								
+	}  ,
+	  
+	  
+ "2":{  
+	  "name":"佩可",
+      "icon":"🍙",
+	  "speed":[1,1,2,2,1,1,2],
+	  "skill":{
+				"1":{
+					"skill_porb":0.1,
+					"skill_text":"佩可吃完了一个饭团，猛冲3步！跑的太快感觉好饿，沉默自己一回合。",
+					"skill_effect":"forward(id,3,position)\ngive_silence(id,1,silence)"
+					},
+				"2":{
+					"skill_porb":0.1,
+					"skill_text":"'肚子空空的......'佩可后退1步去找找饭团。",
+					"skill_effect":"backward(id,1,position)\ntext=prob_text(prob_forward(0.5,id,3,position),'找到饭团了，又回头走了3步。')"
+					},		
+				"3":{
+					"skill_porb":0.08,
+					"skill_text":"佩可使用了UB[公主突进]！佩可猛冲5步，并休息一回合。",
+					"skill_effect":"forward(id,5,position)\ngive_pause(id,1,pause)"
+					},
+				"4":{
+				    "skill_porb":0.02,
+				    "skill_text":"'超全力全开！'佩可将自己以外第一名击退4步，并猛冲5步。",
+				    "skill_effect":"forward(id,5,position)\nbackward(select_fast(list,id),4,position)"
+					}
+			   }
+								
+	}  	,  
+ "3":{  
+	  "name":"吉塔",
+      "icon":"🎸",
+	  "speed":[1,2,2,2,2,1,1],
+	  "skill":{
+				"1":{
+					"skill_porb":0.1,
+					"skill_text":"“今天先帮你代一刀吧。”吉塔前进1步，",
+					"skill_effect":"forward(id,1,position)\ngid=select_random(id)\nforward(gid,1,position)\ntext=f'并帮{gid}号选手代了1刀，使其前进1步。'"
+					},
+				"2":{
+					"skill_porb":0.1,
+					"skill_text":"“今天3刀出完了吗？”吉塔督促了团员，吉塔前进3步，其他全员前进1步。",
+					"skill_effect":"forward(id,3,position)\nn_forward(select_all(id),1,position)"
+					},		
+				"3":{
+					"skill_porb":0.08,
+					"skill_text":"吉塔使用了UB[暴风雨之剑]！猛冲了4步。",
+					"skill_effect":"forward(id,4,position)"
+					},
+				"4":{
+				    "skill_porb":0.02,
+				    "skill_text":"“@全体成员，今晚合刀！”吉塔发动了全会合刀。其他全员前进2步。吉塔前进5步。",
+				    "skill_effect":"forward(id,5,position)\nn_forward(select_all(id),2,position)"
+					}
+			   }
+								
+	}  	,  
+"4":{  
+	  "name":"凯留",
+      "icon":"🐱",
+	  "speed":[1,2,2,2,2,1,1],
+	  "skill":{
+				"1":{
+					"skill_porb":0.1,
+					"skill_text":"真拿你没办法呢，看我的吧！凯留向前快跑了1步，并且将自己外第一名击退了2步。",
+					"skill_effect":"forward(id,1,position)\nbackward(select_fast(list,id),2,position)"
+					},
+				"2":{
+					"skill_porb":0.1,
+					"skill_text":"“我只是个监视者......”凯留发动了[二五仔]，后退了1步，",
+					"skill_effect":"backward(id,1,position)\ngid=select_random(id)\nbackward(gid,2,position)\ntext=f'并将{gid}号选手击退了2步。'"
+					},		
+				"3":{
+					"skill_porb":0.08,
+					"skill_text":"凯留使用了UB[格林炸裂]!凯留前进了1步，除凯留外全体后退2步！",
+					"skill_effect":"forward(id,1,position)\nn_backward(select_all(id),2,position)"
+					},
+				"4":{
+				    "skill_porb":0.02,
+				    "skill_text":"[新春炸裂]！！！凯留突然穿上了和服，猛冲了8步！！！",
+				    "skill_effect":"forward(id,8,position)"
+					}
+			   }
+								
+	}  	,  	  
+"5":{  
+	  "name":"初音",
+      "icon":"⭐️",
+	  "speed":[1,2,2,2,2,2,1],
+	  "skill":{
+				"1":{
+					"skill_porb":0.1,
+					"skill_text":"初音使用了超能力飞行，向前飞了两步。",
+					"skill_effect":"forward(id,2,position)"
+					},
+				"2":{
+					"skill_porb":0.1,
+					"skill_text":"“好困啊，先睡一觉吧......”初音睡着了，暂停1回合，",
+					"skill_effect":"give_pause(id,1,pause)\ngid=select_random(id)\ngive_pause(gid,1,pause)\ntext=f'并拉了{gid}号选手一起睡。'"
+					},		
+				"3":{
+					"skill_porb":0.09,
+					"skill_text":"初音使用了UB[流星]。其他全员后退1步，初音前进了2步。",
+					"skill_effect":"forward(id,2,position)\nn_backward(select_all(id),1,position)"
+					},
+				"4":{
+				    "skill_porb":0.03,
+				    "skill_text":"初音不知不觉升到了六星，使用了[大荒星陨]！其他全员暂停一回合并后退3步！",
+				    "skill_effect":"n_backward(select_all(id),3,position)\nn_give_pause(select_all(id),1,pause)"
+					}
+			   }
+								
+	}  	  	  
+	  
+	  
+}
