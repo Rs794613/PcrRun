@@ -376,7 +376,6 @@ def one_unit_run(id,pause,position,Race_list):
         c = runchara.Run_chara(str(cid))
         speedlist = c.getspeed()
         step = random.choice(speedlist)
-        print(speedlist)
         forward(id,step,position)
         return
     else:
@@ -422,12 +421,12 @@ def introduce_race(Race_list):
     for id in range(1,6):
         msg += f'{id}号：'
         cid = Race_list[id-1]
-        c = Runchara.Run_chara(str(cid))
+        c = runchara.Run_chara(str(cid))
         icon = c.geticon()
         name = c.getname()
         msg += f'{name}，图标为{icon}'
         msg += "\n" 
-    msg += "所有人请在30秒内选择支持的选手。\n[1/2/3/4/5]号xx积分\n积分为0的可以发送领赛跑积分。"    
+    msg += "所有人请在30秒内选择支持的选手。格式如下：\n1/2/3/4/5号xx积分\n如果积分为0，可以发送：\n领赛跑积分"    
     return msg    
         
         
