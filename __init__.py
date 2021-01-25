@@ -147,10 +147,7 @@ class NumRecord:
     def get_kokoro_num(self,gid):
         return self.kokoro_num[gid]
         
-    
-        
 numrecord = NumRecord()       
-        
 
 #将角色以角色编号的形式分配到赛道上，返回一个赛道的列表。
 def chara_select():
@@ -513,16 +510,11 @@ async def Racetest(bot, ev: CQEvent):
     pause = [0 for x in range(0,NUMBER)]
     ub = [0 for x in range(0,NUMBER)]
     numrecord.init_num(gid)
-
-    
-    #Race_list = chara_select()
-    Race_list = [6,7,8,9,10]
+    Race_list = chara_select()
     msg = '兰德索尔赛跑即将开始！\n下面为您介绍参赛选手：'
     await bot.send(ev, msg)
     await asyncio.sleep(ONE_TURN_TIME)
     #介绍选手，开始支持环节
-    
-    
     msg = introduce_race(Race_list)
     await bot.send(ev, msg)
     await asyncio.sleep(SUPPORT_TIME)
