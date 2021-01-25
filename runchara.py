@@ -8,7 +8,8 @@ class Run_chara:
     # 通过传入文件名 读入对应的角色Json文档进行初始化
     def __init__(self, id:str):
         project_path = os.path.dirname(os.path.abspath(__file__))
-        file_path = project_path+r'\config.json' 
+        file_path = os.path.join(project_path,'config.json')
+        
         # 读文件
         with open(file_path,"r", encoding='UTF-8') as f:
             self.config = json.loads(f.read())
