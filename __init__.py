@@ -10,8 +10,10 @@ import random
 import heapq
 from . import runchara
 import copy
-
-
+import os
+from  PIL  import   Image,ImageFont,ImageDraw
+from io import BytesIO
+import base64
 sv = Service('pcr-run', enable_on_default=True)
 
 ROAD = '='
@@ -21,6 +23,9 @@ NUMBER = 5
 ONE_TURN_TIME = 3
 SUPPORT_TIME = 30
 DB_PATH = os.path.expanduser('~/.hoshino/pcr_running_counter.db')
+FILE_PATH = os.path.dirname(__file__)
+#如果此项为True，则技能由图片形式发送，减少风控。
+SKILL_IMAGE = False
 class RunningJudger:
     def __init__(self):
         self.on = {}
@@ -48,9 +53,7 @@ class RunningJudger:
     def turn_off(self, gid):
         self.on[gid] = False
         
-               
-        
-        
+                       
 running_judger = RunningJudger()
 
 class ScoreCounter:
@@ -120,6 +123,35 @@ class ScoreCounter:
     
 
 
+
+
+
+#这个类用于记录一些与技能有关的变量，如栞的ub计数，可可萝的主人
+class NumRecord:
+    def __init__(self):
+        self.kan_num = {}
+        self.kokoro_num = {}
+        
+    def init_num(self,gid):
+        self.kan_num[gid] = 1
+        self.kokoro_num[gid] = 0
+    def get_kan_num(self,gid): 
+        return self.kan_num[gid] 
+    def add_kan_num(self,gid,num):
+        self.kan_num[gid]+=num
+    def set_kokoro_num(self,gid,kokoro_id):
+        l1 = range(1,NUMBER+1)
+        list(l1).remove(kokoro_id)
+        self.kokoro_num[gid] = random.choice(l1)
+        return self.kokoro_num[gid]
+    def get_kokoro_num(self,gid):
+        return self.kokoro_num[gid]
+        
+    
+        
+numrecord = NumRecord()       
+        
+
 #将角色以角色编号的形式分配到赛道上，返回一个赛道的列表。
 def chara_select():
     l = range(1,TOTAL_NUMBER+1)
@@ -131,22 +163,22 @@ def get_chara_id(list,id):
     return raceid
        
 #输入赛道列表和自己的赛道，选出自己外最快的赛道
-def select_fast(charalist,id):
-    list1 = copy.deepcopy(charalist) 
+def select_fast(position,id):
+    list1 = copy.deepcopy(position) 
     list1[id-1] = 999
     fast = list1.index(min(list1))
     return fast+1
 
 #输入赛道列表和自己的赛道，选出自己外最慢的赛道。 
-def select_last(charalist,id):
-    list1 = copy.deepcopy(charalist)
+def select_last(position,id):
+    list1 = copy.deepcopy(position)
     list1[id-1] = 0
     last = list1.index(max(list1))
     return last+1    
     
 #输入赛道列表，自己的赛道和数字n，选出自己外第n快的赛道。     
-def select_number(charalist,id,n):
-    lis = copy.deepcopy(charalist)
+def select_number(position,id,n):
+    lis = copy.deepcopy(position)
     lis[id-1] = 999
     max_NUMBER = heapq.nsmallest(n, lis) 
     max_index = []
@@ -177,6 +209,20 @@ def select_all(id):
     l1.remove(id)
     return l1
 
+def search_kokoro(charalist):
+    if 10 in charalist:
+        return charalist.index(10)+1
+    
+    else:
+        return None
+
+
+
+
+
+
+
+
 #对单一对象的基本技能：前进，后退，沉默，暂停，必放ub
 def forward(id,step,position):
     fid = int(id)
@@ -201,6 +247,18 @@ def give_pause(id,num,pause):
 def give_ub(id,num,ub):
     ub[id-1] += num
     return
+
+def change_position(id,rid,position):
+    position[id-1],position[rid-1] = position[rid-1],position[id-1]
+    return 
+
+#用于技能参数增加
+def add(a,b):
+    return a+b
+
+   
+
+
 
 #对列表多对象的基本技能
 
@@ -265,12 +323,12 @@ def prob_give_silence(prob,id,num,silence):
     else :
         return 0
 
-#根据概率触发技能的返回，判断是否增加文本，返回一段技能文本
-def prob_text(is_prob,text):
+#根据概率触发技能的返回，判断是否增加文本，成功返回成功文本，失败返回失败文本
+def prob_text(is_prob,text1,text2):
     if is_prob == 1:
-        addtion_text = text
+        addtion_text = text1
     else:
-        addtion_text = ""
+        addtion_text = text2
     return addtion_text
 
 #按概率表选择一个技能编号
@@ -300,10 +358,14 @@ def skill_load(cid,sid):
     
     
 #指定赛道的角色释放技能，输入分配好的赛道和赛道编号
-def skill_unit(Race_list,rid,position,silence,pause,ub):
+def skill_unit(Race_list,rid,position,silence,pause,ub,gid):
     #检查是否被沉默
     cid = Race_list[rid-1]
     sid = skill_select(cid)
+    if ub[rid-1]!=0:
+        sid = 3
+        ub[rid-1]-= 1
+        
     skill = skill_load(cid,sid)
     skillmsg = skill[0]
     skillmsg += ":"
@@ -318,22 +380,26 @@ def skill_unit(Race_list,rid,position,silence,pause,ub):
     silence = silence
     pause = pause
     ub = ub
+    kan_num = numrecord.get_kan_num(gid)
+    kokoro_num = numrecord.get_kokoro_num(gid)
     if skill[2]== "null":
         return skillmsg
     loc = locals()    
     addtion_text = ''
     exec(skill[2])
     if 'text'in loc.keys():
-        addtion_text = loc['text']    
+        addtion_text = loc['text']
+    if 'kan_num1'in loc.keys():
+        numrecord.add_kan_num(gid,loc['kan_num1'])         
     skillmsg += addtion_text
     
     return skillmsg
     
 #每个赛道的角色轮流释放技能    
-def skill_race(Race_list,position,silence,pause,ub):
+def skill_race(Race_list,position,silence,pause,ub,gid):
     skillmsg = ""
     for rid in range(1,6):
-        skillmsg += skill_unit(Race_list,rid,position,silence,pause,ub)
+        skillmsg += skill_unit(Race_list,rid,position,silence,pause,ub,gid)
         if rid !=5:
             skillmsg += "\n"
     return skillmsg    
@@ -426,25 +492,10 @@ def introduce_race(Race_list):
         name = c.getname()
         msg += f'{name}，图标为{icon}'
         msg += "\n" 
-    msg += "所有人请在30秒内选择支持的选手。格式如下：\n1/2/3/4/5号xx积分\n如果积分为0，可以发送：\n领赛跑积分"    
+    msg += f"所有人请在{SUPPORT_TIME}秒内选择支持的选手。格式如下：\n1/2/3/4/5号xx积分\n如果积分为0，可以发送：\n领赛跑积分"    
     return msg    
         
-        
-        
-        
-    
-
-
-
-
-
-
-
-
-
-
-
-    
+            
 @sv.on_prefix(('测试赛跑', '赛跑开始'))
 async def Racetest(bot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
@@ -452,16 +503,20 @@ async def Racetest(bot, ev: CQEvent):
     if running_judger.get_on_off_status(ev.group_id):
             await bot.send(ev, "此轮赛跑还没结束，请勿重复使用指令。")
             return
+            
     running_judger.turn_on(ev.group_id)
-   
+    gid = ev.group_id
     #用于记录各赛道上角色位置，第i号角色记录在position[i-1]上
     position = [ROADLENGTH for x in range(0,NUMBER)]
     #同理，记录沉默，暂停，以及必放ub标记情况
     silence = [0 for x in range(0,NUMBER)]
     pause = [0 for x in range(0,NUMBER)]
     ub = [0 for x in range(0,NUMBER)]
-           
-    Race_list = chara_select()
+    numrecord.init_num(gid)
+
+    
+    #Race_list = chara_select()
+    Race_list = [6,7,8,9,10]
     msg = '兰德索尔赛跑即将开始！\n下面为您介绍参赛选手：'
     await bot.send(ev, msg)
     await asyncio.sleep(ONE_TURN_TIME)
@@ -475,9 +530,14 @@ async def Racetest(bot, ev: CQEvent):
     #支持环节结束
     msg = '支持环节结束，下面赛跑正式开始。'
     await bot.send(ev, msg)    
-    await asyncio.sleep(ONE_TURN_TIME)    
-    
- 
+    await asyncio.sleep(ONE_TURN_TIME) 
+    kokoro_id = search_kokoro(Race_list)
+    if kokoro_id is not None:
+        kokoro_num = numrecord.set_kokoro_num(gid,kokoro_id)
+        msg=f'本局存在可可萝，可可萝的主人为{kokoro_num}号选手'
+        await bot.send(ev, msg)    
+        await asyncio.sleep(ONE_TURN_TIME)
+
     race_init(position,silence,pause,ub)
     msg = '运动员们已经就绪！\n'
     msg += print_race(Race_list,position)
@@ -497,8 +557,22 @@ async def Racetest(bot, ev: CQEvent):
             
         await asyncio.sleep(ONE_TURN_TIME)
         skillmsg = "技能发动阶段:\n"
-        skillmsg += skill_race(Race_list,position,silence,pause,ub)
-        await bot.send(ev, skillmsg)
+        skillmsg += skill_race(Race_list,position,silence,pause,ub,gid)
+        if SKILL_IMAGE ==True:
+            im = Image.new("RGB", (600, 150), (255, 255, 255))
+            dr = ImageDraw.Draw(im)
+            FONTS_PATH = os.path.join(FILE_PATH,'fonts')
+            FONTS = os.path.join(FONTS_PATH,'msyh.ttf')
+            font = ImageFont.truetype(FONTS, 14)
+            dr.text((10, 5), skillmsg, font=font, fill="#000000")
+            bio  = BytesIO()
+            im.save(bio, format='PNG')
+            base64_str = 'base64://' + base64.b64encode(bio.getvalue()).decode()
+            mes  = f"[CQ:image,file={base64_str}]"
+            await bot.send(ev, mes)        
+        else:
+            await bot.send(ev, skillmsg)
+
         await asyncio.sleep(ONE_TURN_TIME)
         msg = f'技能发动结果:\n'
         msg += print_race(Race_list,position)
@@ -534,23 +608,8 @@ async def Racetest(bot, ev: CQEvent):
     await bot.send(ev, supportmsg)  
     running_judger.set_support(ev.group_id) 
     running_judger.turn_off(ev.group_id)
-           
-           
-            
-        
-        
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-        
+ 
+ 
 @sv.on_rex(r'^(\d+)号(\d+)(积分|分)$') 
 async def on_input_score(bot, ev: CQEvent):
     try:
@@ -619,8 +678,30 @@ async def get_score(bot, ev: CQEvent):
     except Exception as e:
         await bot.send(ev, '错误:\n' + str(e)) 
         
-        
-        
+async def get_user_card_dict(bot, group_id):
+    mlist = await bot.get_group_member_list(group_id=group_id)
+    d = {}
+    for m in mlist:
+        d[m['user_id']] = m['card'] if m['card']!='' else m['nickname']
+    return d        
+@sv.on_fullmatch(('赛跑排行榜', '赛跑群排行'))
+async def Race_ranking(bot, ev: CQEvent):
+    try:
+        user_card_dict = await get_user_card_dict(bot, ev.group_id)
+        score_dict = {}
+        score_counter = ScoreCounter()
+        gid = ev.group_id
+        for uid in user_card_dict.keys():
+            if uid != ev.self_id:
+                score_dict[user_card_dict[uid]] = score_counter._get_score(gid, uid)
+        group_ranking = sorted(score_dict.items(), key = lambda x:x[1], reverse = True)
+        msg = '此群赛跑积分排行为:\n'
+        for i in range(min(len(group_ranking), 10)):
+            if group_ranking[i][1] != 0:
+                msg += f'第{i+1}名: {group_ranking[i][0]}, 积分: {group_ranking[i][1]}分\n'
+        await bot.send(ev, msg.strip())
+    except Exception as e:
+        await bot.send(ev, '错误:\n' + str(e))        
     
 
     
