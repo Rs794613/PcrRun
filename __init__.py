@@ -10,7 +10,6 @@ import random
 import heapq
 from . import runchara
 import copy
-import os
 from  PIL  import   Image,ImageFont,ImageDraw
 from io import BytesIO
 import base64
@@ -22,7 +21,7 @@ TOTAL_NUMBER = 5
 NUMBER = 5
 ONE_TURN_TIME = 3
 SUPPORT_TIME = 30
-DB_PATH = os.path.expanduser('~/.hoshino/pcr_running_counter.db')
+RUN_DB_PATH = os.path.expanduser('~/.hoshino/pcr_running_counter.db')
 FILE_PATH = os.path.dirname(__file__)
 #如果此项为True，则技能由图片形式发送，减少风控。
 SKILL_IMAGE = False
@@ -30,6 +29,8 @@ class RunningJudger:
     def __init__(self):
         self.on = {}
         self.support = {}
+        self.support_on = {}
+        
     def set_support(self,gid):
         self.support[gid] = {}
     def get_support(self,gid):
@@ -52,18 +53,27 @@ class RunningJudger:
         self.on[gid] = True
     def turn_off(self, gid):
         self.on[gid] = False
+#下注开关
+    def get_on_off_support_status(self, gid):
+        return self.support_on[gid] if self.support_on.get(gid) is not None else False
+    def turn_on_support(self, gid):
+        self.support_on[gid] = True
+    def turn_off_support(self, gid):
+        self.support_on[gid] = False
+
+
         
                        
 running_judger = RunningJudger()
 
 class ScoreCounter:
     def __init__(self):
-        os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+        os.makedirs(os.path.dirname(RUN_DB_PATH), exist_ok=True)
         self._create_table()
 
 
     def _connect(self):
-        return sqlite3.connect(DB_PATH)
+        return sqlite3.connect(RUN_DB_PATH)
 
 
     def _create_table(self):
@@ -110,7 +120,7 @@ class ScoreCounter:
         except:
             raise Exception('查找表发生错误')
             
-#判断积分是否足够下注
+#判断金币是否足够下注
     def _judge_score(self, gid, uid ,score):
         try:
             current_score = self._get_score(gid, uid)
@@ -489,7 +499,7 @@ def introduce_race(Race_list):
         name = c.getname()
         msg += f'{name}，图标为{icon}'
         msg += "\n" 
-    msg += f"所有人请在{SUPPORT_TIME}秒内选择支持的选手。格式如下：\n1/2/3/4/5号xx积分\n如果积分为0，可以发送：\n领赛跑积分"    
+    msg += f"所有人请在{SUPPORT_TIME}秒内选择支持的选手。格式如下：\n1/2/3/4/5号xx金币\n如果金币为0，可以发送：\n领赛跑金币"    
     return msg    
         
             
@@ -517,8 +527,9 @@ async def Racetest(bot, ev: CQEvent):
     #介绍选手，开始支持环节
     msg = introduce_race(Race_list)
     await bot.send(ev, msg)
+    running_judger.turn_on_support(gid)
     await asyncio.sleep(SUPPORT_TIME)
-    running_judger.turn_off(ev.group_id)
+    running_judger.turn_off_support(gid)
     #支持环节结束
     msg = '支持环节结束，下面赛跑正式开始。'
     await bot.send(ev, msg)    
@@ -584,7 +595,7 @@ async def Racetest(bot, ev: CQEvent):
     gid = ev.group_id
     support = running_judger.get_support(gid)
     winuid = []
-    supportmsg = '积分结算:\n'
+    supportmsg = '金币结算:\n'
     if support!=0:
         for uid in support:
             support_id = support[uid][0]
@@ -593,19 +604,19 @@ async def Racetest(bot, ev: CQEvent):
                 winuid.append(uid)
                 winscore = support_score*2
                 score_counter._add_score(gid, uid ,winscore)
-                supportmsg += f'[CQ:at,qq={uid}]+{winscore}积分\n'     
+                supportmsg += f'[CQ:at,qq={uid}]+{winscore}金币\n'     
             else:
                 score_counter._reduce_score(gid, uid ,support_score)
-                supportmsg += f'[CQ:at,qq={uid}]-{support_score}积分\n'
+                supportmsg += f'[CQ:at,qq={uid}]-{support_score}金币\n'
     await bot.send(ev, supportmsg)  
     running_judger.set_support(ev.group_id) 
     running_judger.turn_off(ev.group_id)
  
  
-@sv.on_rex(r'^(\d+)号(\d+)(积分|分)$') 
+@sv.on_rex(r'^(1|2|3|4|5)号(\d+)(金币|分)$') 
 async def on_input_score(bot, ev: CQEvent):
     try:
-        if running_judger.get_on_off_status(ev.group_id):
+        if running_judger.get_on_off_support_status(ev.group_id):
             gid = ev.group_id
             uid = ev.user_id
             
@@ -623,9 +634,9 @@ async def on_input_score(bot, ev: CQEvent):
                 msg = '您已经支持过了。'
                 await bot.send(ev, msg, at_sender=True)
                 return
-            #检查积分是否足够下注
+            #检查金币是否足够下注
             if score_counter._judge_score(gid, uid ,input_score) == 0:
-                msg = '您的积分不足。'
+                msg = '您的金币不足。'
                 await bot.send(ev, msg, at_sender=True)
                 return
             else :
@@ -637,7 +648,7 @@ async def on_input_score(bot, ev: CQEvent):
             
                 
                 
-@sv.on_prefix('领赛跑积分')
+@sv.on_prefix(['领金币','领取金币'])
 async def add_score(bot, ev: CQEvent):
     try:
         score_counter = ScoreCounter()
@@ -647,16 +658,16 @@ async def add_score(bot, ev: CQEvent):
         current_score = score_counter._get_score(gid, uid)
         if current_score == 0:
             score_counter._add_score(gid, uid ,50)
-            msg = '您已领取50积分'
+            msg = '您已领取50金币'
             await bot.send(ev, msg, at_sender=True)
             return
         else:     
-            msg = '积分为0才能领取哦。'
+            msg = '金币为0才能领取哦。'
             await bot.send(ev, msg, at_sender=True)
             return
     except Exception as e:
         await bot.send(ev, '错误:\n' + str(e))         
-@sv.on_prefix('查赛跑积分')
+@sv.on_prefix(['查金币','查询金币','查看金币'])
 async def get_score(bot, ev: CQEvent):
     try:
         score_counter = ScoreCounter()
@@ -664,7 +675,7 @@ async def get_score(bot, ev: CQEvent):
         uid = ev.user_id
         
         current_score = score_counter._get_score(gid, uid)
-        msg = f'您的积分为{current_score}'
+        msg = f'您的金币为{current_score}'
         await bot.send(ev, msg, at_sender=True)
         return
     except Exception as e:
@@ -687,10 +698,10 @@ async def Race_ranking(bot, ev: CQEvent):
             if uid != ev.self_id:
                 score_dict[user_card_dict[uid]] = score_counter._get_score(gid, uid)
         group_ranking = sorted(score_dict.items(), key = lambda x:x[1], reverse = True)
-        msg = '此群赛跑积分排行为:\n'
+        msg = '此群赛跑金币排行为:\n'
         for i in range(min(len(group_ranking), 10)):
             if group_ranking[i][1] != 0:
-                msg += f'第{i+1}名: {group_ranking[i][0]}, 积分: {group_ranking[i][1]}分\n'
+                msg += f'第{i+1}名: {group_ranking[i][0]}, 金币: {group_ranking[i][1]}分\n'
         await bot.send(ev, msg.strip())
     except Exception as e:
         await bot.send(ev, '错误:\n' + str(e))        
