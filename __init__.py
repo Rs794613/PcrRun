@@ -24,7 +24,7 @@ SUPPORT_TIME = 30
 RUN_DB_PATH = os.path.expanduser('~/.hoshino/pcr_running_counter.db')
 FILE_PATH = os.path.dirname(__file__)
 #如果此项为True，则技能由图片形式发送，减少风控。
-SKILL_IMAGE = False
+SKILL_IMAGE = True
 class RunningJudger:
     def __init__(self):
         self.on = {}
@@ -512,6 +512,7 @@ async def Racetest(bot, ev: CQEvent):
             return
             
     running_judger.turn_on(ev.group_id)
+    running_judger.set_support(ev.group_id) 
     gid = ev.group_id
     #用于记录各赛道上角色位置，第i号角色记录在position[i-1]上
     position = [ROADLENGTH for x in range(0,NUMBER)]
@@ -524,10 +525,11 @@ async def Racetest(bot, ev: CQEvent):
     msg = '兰德索尔赛跑即将开始！\n下面为您介绍参赛选手：'
     await bot.send(ev, msg)
     await asyncio.sleep(ONE_TURN_TIME)
+    running_judger.turn_on_support(gid)
     #介绍选手，开始支持环节
     msg = introduce_race(Race_list)
     await bot.send(ev, msg)
-    running_judger.turn_on_support(gid)
+    
     await asyncio.sleep(SUPPORT_TIME)
     running_judger.turn_off_support(gid)
     #支持环节结束
@@ -613,7 +615,7 @@ async def Racetest(bot, ev: CQEvent):
     running_judger.turn_off(ev.group_id)
  
  
-@sv.on_rex(r'^(1|2|3|4|5)号(\d+)(金币|分)$') 
+@sv.on_rex(r'^([1-5])号(\d+)(金币|分)$') 
 async def on_input_score(bot, ev: CQEvent):
     try:
         if running_judger.get_on_off_support_status(ev.group_id):
@@ -707,7 +709,14 @@ async def Race_ranking(bot, ev: CQEvent):
         await bot.send(ev, '错误:\n' + str(e))        
     
 
-    
+@sv.on_fullmatch('重置赛跑')
+async def init_runstatus(bot, ev: CQEvent):
+    if not priv.check_priv(ev, priv.ADMIN):
+        await bot.finish(ev, '只有群管理才能使用重置决斗哦。', at_sender=True)
+    running_judger.turn_off(ev.group_id)
+    running_judger.set_support(ev.group_id)
+    msg = '已重置本群赛跑状态！'
+    await bot.send(ev, msg, at_sender=True)    
         
         
         
