@@ -17,14 +17,14 @@ sv = Service('pcr-run', enable_on_default=True)
 
 ROAD = '='
 ROADLENGTH = 16
-TOTAL_NUMBER = 5
+TOTAL_NUMBER = 10
 NUMBER = 5
 ONE_TURN_TIME = 3
 SUPPORT_TIME = 30
 RUN_DB_PATH = os.path.expanduser('~/.hoshino/pcr_running_counter.db')
 FILE_PATH = os.path.dirname(__file__)
 #如果此项为True，则技能由图片形式发送，减少风控。
-SKILL_IMAGE = True
+SKILL_IMAGE = False
 class RunningJudger:
     def __init__(self):
         self.on = {}
@@ -499,7 +499,7 @@ def introduce_race(Race_list):
         name = c.getname()
         msg += f'{name}，图标为{icon}'
         msg += "\n" 
-    msg += f"所有人请在{SUPPORT_TIME}秒内选择支持的选手。格式如下：\n1/2/3/4/5号xx金币\n如果金币为0，可以发送：\n领赛跑金币"    
+    msg += f"所有人请在{SUPPORT_TIME}秒内选择支持的选手。格式如下：\n1/2/3/4/5号xx金币\n如果金币为0，可以发送：\n领金币"    
     return msg    
         
             
