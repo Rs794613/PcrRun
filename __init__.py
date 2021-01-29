@@ -712,7 +712,7 @@ async def Race_ranking(bot, ev: CQEvent):
 @sv.on_fullmatch('重置赛跑')
 async def init_runstatus(bot, ev: CQEvent):
     if not priv.check_priv(ev, priv.ADMIN):
-        await bot.finish(ev, '只有群管理才能使用重置决斗哦。', at_sender=True)
+        await bot.finish(ev, '只有群管理才能使用重置赛跑哦。', at_sender=True)
     running_judger.turn_off(ev.group_id)
     running_judger.set_support(ev.group_id)
     msg = '已重置本群赛跑状态！'
