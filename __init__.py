@@ -24,7 +24,7 @@ SUPPORT_TIME = 30
 RUN_DB_PATH = os.path.expanduser('~/.hoshino/pcr_running_counter.db')
 FILE_PATH = os.path.dirname(__file__)
 #如果此项为True，则技能由图片形式发送，减少风控。
-SKILL_IMAGE = False
+SKILL_IMAGE = True
 class RunningJudger:
     def __init__(self):
         self.on = {}
@@ -150,8 +150,8 @@ class NumRecord:
     def add_kan_num(self,gid,num):
         self.kan_num[gid]+=num
     def set_kokoro_num(self,gid,kokoro_id):
-        l1 = range(1,NUMBER+1)
-        list(l1).remove(kokoro_id)
+        l1 = list(range(1,NUMBER+1))
+        l1.remove(kokoro_id)
         self.kokoro_num[gid] = random.choice(l1)
         return self.kokoro_num[gid]
     def get_kokoro_num(self,gid):
@@ -198,15 +198,15 @@ def select_number(position,id,n):
 
 #输入自己的赛道号，选出自己外的随机1个赛道，返回一个赛道编号   
 def select_random(id):
-    l1 = range(1,NUMBER+1)
-    list(l1).remove(id)
+    l1 = list(range(1,NUMBER+1))
+    l1.remove(id)
     select_id = random.choice(l1)
     return select_id
 
 #输入自己的赛道号和数字n，选出自己外的随机n个赛道，返回一个赛道号的列表   
 def nselect_random(id,n):
-    l1 = range(1,NUMBER+1)
-    list(l1).remove(id)
+    l1 = list(range(1,NUMBER+1))
+    l1.remove(id)
     select_list = random.sample(l1,n)
     return select_list
     
